@@ -1,0 +1,87 @@
+================================================================================
+  AUTHENTICATION FIX - START HERE
+================================================================================
+
+PROBLEM:
+  - Backend won't start
+  - Registration fails
+  - Login fails
+  - Error: "cannot import name 'genai' from 'google'"
+
+ROOT CAUSE:
+  Missing package: google-genai
+
+SOLUTION (Choose One):
+================================================================================
+
+OPTION 1: AUTOMATED FIX (RECOMMENDED)
+--------------------------------------
+1. Double-click: install_fix.bat
+2. Wait for installation to complete
+3. Follow on-screen instructions
+
+OPTION 2: MANUAL FIX
+--------------------
+1. Open Command Prompt in project root
+2. Run these commands:
+
+   cd backend
+   venv\Scripts\pip.exe install google-genai==0.2.2
+   venv\Scripts\python.exe ..\test_imports.py
+
+3. If all tests pass, start backend:
+
+   venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+4. In another terminal, test authentication:
+
+   cd ..
+   venv\Scripts\python.exe diagnose_auth.py
+
+================================================================================
+VERIFICATION
+================================================================================
+
+After installation, you should see:
+
+✅ Config imports successfully
+✅ Database imports successfully  
+✅ Models import successfully
+✅ Auth imports successfully
+✅ Gemini engine imports successfully
+✅ Main app imports successfully
+
+Then backend will start on: http://127.0.0.1:8000
+
+================================================================================
+TESTING
+================================================================================
+
+1. Backend should start without errors
+2. Visit: http://127.0.0.1:8000/health
+3. Run: venv\Scripts\python.exe diagnose_auth.py
+4. Test from frontend (register/login)
+
+================================================================================
+FILES CHANGED
+================================================================================
+
+1. backend/requirements.txt - Added google-genai==0.2.2
+2. backend/.env - Fixed CORS_ORIGINS format
+3. backend/app/core/config.py - Added CORS parsing
+
+================================================================================
+NEED HELP?
+================================================================================
+
+See detailed documentation:
+- AUTH_FIX_SUMMARY.md - Complete fix documentation
+- FIX_AUTH_COMPLETE.md - Detailed troubleshooting
+- QUICK_FIX_AUTH.md - Quick reference
+
+Run test scripts:
+- test_imports.py - Verify all imports work
+- check_auth_db.py - Verify database schema
+- diagnose_auth.py - Test authentication endpoints
+
+================================================================================

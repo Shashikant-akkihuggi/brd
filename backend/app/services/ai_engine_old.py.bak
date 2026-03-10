@@ -1,0 +1,221 @@
+import openai
+from typing import List, Dict, Optional, Tuple
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from app.core.config import settings
+from app.core.logging import logger
+
+class AIEngine:
+    def __init__(self):
+        if settings.OPENAI_API_KEY:
+            openai.api_key = settings.OPENAI_API_KEY
+            self.enabled = True
+        else:
+            self.enabled = False
+            logger.warning("OpenAI API key not configured. AI features disabled.")
+    
+    async def classify_requirement(self, text: str) -> Dict:
+        """Classify requirement type using AI"""
+        if not self.enabled:
+            return self._fallback_classify(text)
+        
+        try:
+            prompt = f"""Classify the following text into one of these categories:
+- functional: A specific feature or functionality
+- non_functional: Performance, security, scalability requirements
+- business_objective: Business goals or objectives
+- assumption: Assumptions made about the project
+- success_metric: Metrics to measure success
+- timeline: Dates, deadlines, or schedule information
+- risk: Potential risks or concerns
+
+Text: "{text}"
+
+Respond with JSON: {{"type": "category", "confidence": 0.0-1.0, "priority": "critical|high|medium|low", "sentiment": "positive|neutral|negative"}}"""
+            
+            response = openai.ChatCompletion.create(
+                model=settings.OPENAI_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            
+            import json
+            result = json.loads(response.choices[0].message.content)
+            return result
+        except Exception as e:
+            logger.error(f"AI classification error: {e}")
+            return self._fallback_classify(text)
+    
+    def _fallback_classify(self, text: str) -> Dict:
+        """Pattern-based classification fallback"""
+        text_lower = text.lower()
+        
+        # Simple keyword matching
+        if any(word in text_lower for word in ['must', 'should', 'shall', 'will', 'feature', 'function']):
+            req_type = 'functional'
+        elif any(word in text_lower for word in ['performance', 'security', 'scalability', 'availability']):
+            req_type = 'non_functional'
+        elif any(word in text_lower for word in ['goal', 'objective', 'aim', 'purpose']):
+            req_type = 'business_objective'
+        elif any(word in text_lower for word in ['assume', 'assumption', 'given that']):
+            req_type = 'assumption'
+        elif any(word in text_lower for word in ['metric', 'measure', 'kpi', 'target']):
+            req_type = 'success_metric'
+        elif any(word in text_lower for word in ['deadline', 'date', 'schedule', 'timeline', 'by']):
+            req_type = 'timeline'
+        elif any(word in text_lower for word in ['risk', 'concern', 'issue', 'problem']):
+            req_type = 'risk'
+        else:
+            req_type = 'functional'
+        
+        # Simple priority
+        if any(word in text_lower for word in ['critical', 'urgent', 'must have']):
+            priority = 'critical'
+        elif any(word in text_lower for word in ['important', 'high priority']):
+            priority = 'high'
+        elif any(word in text_lower for word in ['nice to have', 'optional']):
+            priority = 'low'
+        else:
+            priority = 'medium'
+        
+        # Simple sentiment
+        if any(word in text_lower for word in ['concern', 'issue', 'problem', 'risk', 'difficult']):
+            sentiment = 'negative'
+        elif any(word in text_lower for word in ['great', 'excellent', 'good', 'benefit']):
+            sentiment = 'positive'
+        else:
+            sentiment = 'neutral'
+        
+        return {
+            'type': req_type,
+            'confidence': 0.7,
+            'priority': priority,
+            'sentiment': sentiment
+        }
+    
+    async def get_embedding(self, text: str) -> List[float]:
+        """Get text embedding for similarity comparison"""
+        if not self.enabled:
+            return self._simple_embedding(text)
+        
+        try:
+            response = openai.Embedding.create(
+                model="text-embedding-ada-002",
+                input=text
+            )
+            return response['data'][0]['embedding']
+        except Exception as e:
+            logger.error(f"Embedding error: {e}")
+            return self._simple_embedding(text)
+    
+    def _simple_embedding(self, text: str) -> List[float]:
+        """Simple word-based embedding fallback"""
+        # Very basic: word count vector (for demo purposes)
+        words = text.lower().split()
+        # Create a simple 384-dim vector based on word characteristics
+        embedding = [0.0] * 384
+        for i, word in enumerate(words[:384]):
+            embedding[i] = len(word) / 10.0
+        return embedding
+    
+    def calculate_similarity(self, embedding1: List[float], embedding2: List[float]) -> float:
+        """Calculate cosine similarity between embeddings"""
+        vec1 = np.array(embedding1).reshape(1, -1)
+        vec2 = np.array(embedding2).reshape(1, -1)
+        return float(cosine_similarity(vec1, vec2)[0][0])
+    
+    async def detect_conflicts(self, requirements: List[Dict]) -> List[Tuple[int, int, float, str]]:
+        """Detect conflicting requirements using semantic similarity"""
+        conflicts = []
+        
+        for i, req1 in enumerate(requirements):
+            for j, req2 in enumerate(requirements[i+1:], start=i+1):
+                if req1.get('embedding') and req2.get('embedding'):
+                    similarity = self.calculate_similarity(
+                        req1['embedding'],
+                        req2['embedding']
+                    )
+                    
+                    # High similarity might indicate duplication or conflict
+                    if similarity > 0.85:
+                        description = await self._analyze_conflict(req1['content'], req2['content'])
+                        conflicts.append((req1['id'], req2['id'], similarity, description))
+        
+        return conflicts
+    
+    async def _analyze_conflict(self, text1: str, text2: str) -> str:
+        """Analyze why two requirements might conflict"""
+        if not self.enabled:
+            return "High similarity detected - possible duplication or conflict"
+        
+        try:
+            prompt = f"""Analyze these two requirements and explain if they conflict or are duplicates:
+
+Requirement 1: {text1}
+Requirement 2: {text2}
+
+Provide a brief explanation (max 100 words)."""
+            
+            response = openai.ChatCompletion.create(
+                model=settings.OPENAI_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=150
+            )
+            
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Conflict analysis error: {e}")
+            return "High similarity detected - possible duplication or conflict"
+    
+    async def rewrite_requirement(self, text: str, instruction: str) -> str:
+        """Rewrite requirement based on instruction"""
+        if not self.enabled:
+            return text
+        
+        try:
+            prompt = f"""Rewrite the following requirement according to the instruction:
+
+Original: {text}
+Instruction: {instruction}
+
+Provide only the rewritten requirement, nothing else."""
+            
+            response = openai.ChatCompletion.create(
+                model=settings.OPENAI_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5
+            )
+            
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Rewrite error: {e}")
+            return text
+    
+    async def generate_summary(self, requirements: List[str]) -> str:
+        """Generate summary of requirements"""
+        if not self.enabled:
+            return f"Summary of {len(requirements)} requirements"
+        
+        try:
+            req_text = "\n".join([f"- {req}" for req in requirements[:50]])  # Limit to 50
+            
+            prompt = f"""Summarize these requirements into a concise executive summary:
+
+{req_text}
+
+Provide a 2-3 paragraph summary highlighting key themes and priorities."""
+            
+            response = openai.ChatCompletion.create(
+                model=settings.OPENAI_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5,
+                max_tokens=300
+            )
+            
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Summary generation error: {e}")
+            return f"Summary of {len(requirements)} requirements covering various aspects of the project."
+
+ai_engine = AIEngine()

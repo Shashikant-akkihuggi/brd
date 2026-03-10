@@ -1,0 +1,49 @@
+{
+    "project": {
+        "name": "Customer Portal Redesign",
+        "description": "Modernize the customer portal with improved UX and new features",
+        "keywords": [
+            "portal",
+            "dashboard",
+            "authentication",
+            "reporting"
+        ]
+    },
+    "data_sources": [
+        {
+            "source_type": "slack",
+            "source_id": "product-channel",
+            "content": "We need to implement single sign-on for the customer portal. Users should be able to login with their corporate credentials. This is a high priority requirement from the enterprise customers.",
+            "author": "sarah@company.com",
+            "timestamp": "2024-01-10T09:30:00Z"
+        },
+        {
+            "source_type": "gmail",
+            "source_id": "email-001",
+            "content": "The system must support real-time reporting with data refresh every 5 minutes. Performance is critical - page load times should be under 2 seconds. We also need to ensure GDPR compliance for all customer data.",
+            "author": "john@company.com",
+            "timestamp": "2024-01-12T14:20:00Z"
+        },
+        {
+            "source_type": "meeting",
+            "source_id": "kickoff-meeting",
+            "content": "Our goal is to increase customer engagement by 40% and reduce support tickets by 25%. The new portal should have a modern, intuitive interface. We assume that 80% of users will access via desktop browsers. Success will be measured by user satisfaction scores and task completion rates.",
+            "author": "mike@company.com",
+            "timestamp": "2024-01-08T10:00:00Z"
+        },
+        {
+            "source_type": "slack",
+            "source_id": "engineering-channel",
+            "content": "I'm concerned about the timeline. We need at least 3 months for proper testing and security audits. The system should not store any payment information directly - we'll use a third-party payment processor.",
+            "author": "alex@company.com",
+            "timestamp": "2024-01-15T16:45:00Z"
+        },
+        {
+            "source_type": "gmail",
+            "source_id": "email-002",
+            "content": "The portal must be accessible on mobile devices and tablets. We should support the latest versions of Chrome, Firefox, Safari, and Edge. The application should work offline for viewing previously loaded data.",
+            "author": "lisa@company.com",
+            "timestamp": "2024-01-14T11:00:00Z"
+        }
+    ]
+}
