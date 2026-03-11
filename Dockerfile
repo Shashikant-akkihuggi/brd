@@ -9,14 +9,14 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY backend/requirements_enhanced.txt requirements.txt
+# Copy requirements directly without renaming
+COPY backend/requirements.txt ./backend/requirements.txt
 
-# Diagnostic: Show what requirements file contains
-RUN echo "=== Contents of requirements.txt ===" && cat requirements.txt
+# Show the file Docker is actually using
+RUN echo "=== Requirements being installed ===" && cat backend/requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies from the exact path
+RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Copy application
 COPY backend/app ./app
