@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY backend/requirements_enhanced.txt requirements.txt
 
+# Diagnostic: Show what requirements file contains
+RUN echo "=== Contents of requirements.txt ===" && cat requirements.txt
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
