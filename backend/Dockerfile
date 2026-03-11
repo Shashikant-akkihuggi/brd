@@ -15,7 +15,9 @@ COPY requirements.txt ./requirements.txt
 RUN echo "=== Requirements being installed ===" && cat requirements.txt
 
 # Install dependencies from the exact path
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt \
+ && pip install email-validator
 
 # Copy application
 COPY . .
