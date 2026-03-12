@@ -8,22 +8,19 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements directly without renaming
-COPY requirements.txt ./requirements.txt
+# Copy requirements
+COPY requirements.txt .
 
-# Show the file Docker is actually using
-RUN echo "=== Requirements being installed ===" && cat requirements.txt
-
-# Install dependencies from the exact path
+# Install dependencies
 RUN pip install --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
  && pip install email-validator
 
-# Copy application
+# Copy backend source
 COPY . .
 
-# Expose port (Render uses $PORT environment variable)
+# Expose port
 EXPOSE 8000
 
-# Run application with dynamic port binding for Render
+# Run FastAPI
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
